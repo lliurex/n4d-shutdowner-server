@@ -1,0 +1,18 @@
+Source: n4d-shutdowner-server
+Section: admin
+Priority: optional
+Maintainer: Equipo LliureX <lliurex@gva.es>
+Uploaders: Angel Berlanas Vicente <lliurex_devel2@edu.gva.es>, Raul Rodrigo Segura <lliurex_devel3@edu.gva.es>,  David Montalva Furio <montalva_dav@gva.es>, Hector Garcia Huerta <lliurex_devel1@edu.gva.es>, Daniel Duran Vecino <daduve@gmail.com>, M.Angel Juan <m.angel.juan@gmail.com>
+Build-Depends: debhelper (>= 7.0)
+Standards-Version: 3.9.5
+
+Package: n4d-shutdowner-server
+Architecture: all
+Conflicts: lliurex-zero-shutdown
+Replaces: lliurex-zero-shutdown
+Pre-Depends: n4d (>=0.112)
+Depends: ${misc:Depends}, lliurex-shutdowner-common
+Description: LliureX Shutdowner server plugins 
+ Plugins supporting lliurex shutdowner server functionality
+
+
