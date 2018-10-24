@@ -1,0 +1,206 @@
+
+import sys
+import os
+import xmlrpclib
+import copy
+import time
+
+class ShutdownerManager:
+	
+
+	def __init__(self):
+		
+		self.cron_file="/etc/cron.d/lliurex-shutdowner"
+		self.thinclient_cron_file="/etc/cron.d/lliurex-shutdowner-thinclients"
+		
+		
+	#def init
+
+	
+	def startup(self,options):
+		
+		self.internal_variable=copy.deepcopy(objects["VariablesManager"].get_variable("SHUTDOWNER"))
+		
+		if self.internal_variable==None:
+			try:
+
+				self.initialize_variable()
+				objects["VariablesManager"].add_variable("SHUTDOWNER",copy.deepcopy(self.internal_variable),"","Shutdowner internal variable","lliurex-shutdowner")
+				
+			except Exception as e:
+				print e
+	
+		self.check_server_shutodown()
+
+	#def startup
+
+	
+	def initialize_variable(self):
+		
+		self.internal_variable={}
+		self.internal_variable["cron_enabled"]=False
+		self.internal_variable["cron_content"]=""
+		self.internal_variable["shutdown_signal"]=0.0
+		self.internal_variable["cron_values"]={}
+		self.internal_variable["cron_values"]["hour"]=0
+		self.internal_variable["cron_values"]["minute"]=0
+		self.internal_variable["cron_values"]["weekdays"]=[True,True,True,True,True]
+		self.internal_variable["cron_values"]["server_shutdown"]=False
+		
+	#def initialize_variable
+
+
+	def check_variable(self,variable):
+
+		try:
+			if not type(variable)==dict:
+				return False
+			if not type(variable["cron_enabled"])==bool:
+				return False
+			if not type(variable["cron_content"])==str:
+				return False
+			if not type(variable["shutdown_signal"])==float:
+				return False
+			if not type(variable["cron_values"])==dict:
+				return False
+			if not type(variable["cron_values"]["hour"])==int:
+				return False
+			if not type(variable["cron_values"]["minute"])==int:
+				return False
+			if not type(variable["cron_values"]["server_shutdown"])==bool:
+				return False
+			if not type(variable["cron_values"]["weekdays"])==list:
+				if len(variable["cron_values"]["weekdays"])!=5:
+					return False
+		except:
+			return False
+
+		return True
+
+	#def check_variable
+
+	
+	def manual_client_list_check(self):
+		
+		objects["VariablesManager"].manual_client_list_check()
+		return True
+		
+	#def manual_client_list_check
+
+	
+	def is_cron_enabled(self):
+		
+		ret={}
+		ret["status"]=self.internal_variable["cron_enabled"]
+		ret["msg"]=self.internal_variable["cron_content"]
+		
+		if ret["status"]:
+			ret["cli_support"]="enabled"
+		else:
+			ret["cli_support"]="disabled"
+		
+		return ret
+		
+	#def is_cron_enabled
+	
+	
+	def is_server_shutdown_enabled(self):
+		
+		ret={}
+		ret["status"]=self.internal_variable["cron_enabled"]
+		ret["msg"]=self.internal_variable["cron_content"] and self.internal_variable["server_shutdown"]
+		if ret["msg"]:
+			ret["cli_support"]="enabled"
+		else:
+			ret["cli_support"]="disabled"
+			
+		return ret
+		
+	#def is_server_shutdown_enabled
+	
+
+	def update_shutdown_signal(self):
+		
+		self.internal_variable["shutdown_signal"]=time.time()
+		return self.save_variable()
+		
+	#def update_shutdown_signal
+
+	
+	def save_variable(self,variable=None):
+
+		if variable==None:
+			variable=copy.deepcopy(self.internal_variable)
+		else:
+			if not self.check_variable(variable):
+				return {"status":False,"msg":"Variable does not have the expected structure"}
+			self.internal_variable=copy.deepcopy(variable)
+		
+		objects["VariablesManager"].set_variable("SHUTDOWNER",variable)
+		
+		self.check_server_shutodown()
+	
+		return {"status":True,"msg":""}
+		
+	#def save_variable
+
+	
+	def check_server_shutodown(self):
+			
+		if self.internal_variable["cron_enabled"] and self.internal_variable["cron_values"]["server_shutdown"]:
+			f=open(self.cron_file,"w")
+			f.write(self.internal_variable["cron_content"])
+			f.close()
+		else:
+			if os.path.exists(self.cron_file):
+				os.remove(self.cron_file)
+			
+		self.build_thinclient_cron()
+		
+		return True
+		
+	#def check_server_shutdown
+	
+	
+	def build_thinclient_cron(self):
+		
+		if self.internal_variable["cron_enabled"] and self.internal_variable["cron_values"]["server_shutdown"]:
+			# server will handle dialog calls its shutdown
+			if os.path.exists(self.thinclient_cron_file):
+				os.remove(self.thinclient_cron_file)
+			return True
+	
+		
+		if self.internal_variable["cron_enabled"]:
+			
+			# server will only handle thin clients dialogs
+			shutdown_cmd="/usr/sbin/shutdown-lliurex"
+			cron_content="%s %s * * %s root %s >> /var/log/syslog\n"
+			minute=self.internal_variable["cron_values"]["minute"]
+			hour=self.internal_variable["cron_values"]["hour"]
+			days=""
+			count=1
+			
+			for day in self.internal_variable["cron_values"]["weekdays"]:
+				if day:
+					days+="%s,"%count
+				count+=1
+			days=days.rstrip(",")
+			
+			thinclient_cron=cron_content%(minute,hour,days,shutdown_cmd)
+			
+			f=open(self.thinclient_cron_file,"w")
+			f.write(thinclient_cron)
+			f.close()
+			
+			return True
+			
+		else:
+			# nothing to do
+			if os.path.exists(self.thinclient_cron_file):
+				os.remove(self.thinclient_cron_file)
+				
+			return True
+		
+		
+	#def build_thinclient_cron
