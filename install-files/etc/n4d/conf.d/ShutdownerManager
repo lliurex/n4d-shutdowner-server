@@ -4,6 +4,6 @@ path=ShutdownerManager.py
 class=ShutdownerManager
 [METHODS]
 is_cron_enabled=anonymous
-update_shutdown_signal=adm,admins,teachers
-manual_client_list_check=adm,admins,teachers
-save_variable=adm,admins,teachers
+update_shutdown_signal=sudo,admins,teachers
+manual_client_list_check=sudo,admins,teachers
+save_variable=sudo,admins,teachers
