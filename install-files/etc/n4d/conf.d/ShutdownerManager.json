@@ -1,0 +1,37 @@
+{
+    "SETUP": {
+        "type": "python",
+        "path": "ShutdownerManager.py",
+        "class": "ShutdownerManager"
+    },
+    "METHODS": {
+        "is_cron_enabled": {
+            "allowed_groups": [
+                "anonymous"
+            ]
+        },
+      
+        "update_shutdown_signal": {
+            "allowed_groups": [
+                "sudo",
+                "admins",
+		"teachers"
+            ]
+        },
+	"manual_client_list": {
+	    "allowed_groups": [
+                "sudo",
+                "admins",
+		"teachers"
+            ]
+	},
+        "save_variable": {
+            "allowed_groups": [
+                "sudo",
+                "admins",
+		"teachers"
+            ]
+        }
+      
+    }
+}

@@ -1,15 +1,17 @@
-
+#!/usr/bin/python3
 import sys
 import os
-import xmlrpclib
 import copy
 import time
+import n4d.server.core as n4dcore
+import n4d.responses
 
 class ShutdownerManager:
 	
 
 	def __init__(self):
 		
+		self.core=n4dcore.Core.get_core()
 		self.cron_file="/etc/cron.d/lliurex-shutdowner"
 		self.thinclient_cron_file="/etc/cron.d/lliurex-shutdowner-thinclients"
 		
@@ -19,16 +21,19 @@ class ShutdownerManager:
 	
 	def startup(self,options):
 		
-		self.internal_variable=copy.deepcopy(objects["VariablesManager"].get_variable("SHUTDOWNER"))
+		#Old n4d:self.internal_variable=copy.deepcopy(objects["VariablesManager"].get_variable("SHUTDOWNER"))
+		self.internal_variable=self.core.get_variable("SHUTDOWNER")["return"]
+		
 		
 		if self.internal_variable==None:
 			try:
 
 				self.initialize_variable()
-				objects["VariablesManager"].add_variable("SHUTDOWNER",copy.deepcopy(self.internal_variable),"","Shutdowner internal variable","lliurex-shutdowner")
-				
+				#Old n4d: objects["VariablesManager"].add_variable("SHUTDOWNER",copy.deepcopy(self.internal_variable),"","Shutdowner internal variable","lliurex-shutdowner")
+				self.core.set_variable("SHUTDOWNER",self.internal_variable)
+					
 			except Exception as e:
-				print e
+				print(str(e))
 	
 		self.check_server_shutodown()
 
@@ -81,9 +86,12 @@ class ShutdownerManager:
 
 	
 	def manual_client_list_check(self):
-		
+		'''
 		objects["VariablesManager"].manual_client_list_check()
 		return True
+		'''
+		self.core.check_clients()
+		return n4d.responses.build_successful_call_response(ret)
 		
 	#def manual_client_list_check
 
@@ -99,7 +107,9 @@ class ShutdownerManager:
 		else:
 			ret["cli_support"]="disabled"
 		
-		return ret
+		#Old n4d: return ret
+		return n4d.responses.build_successful_call_response(ret)
+		
 		
 	#def is_cron_enabled
 	
@@ -114,7 +124,9 @@ class ShutdownerManager:
 		else:
 			ret["cli_support"]="disabled"
 			
-		return ret
+		#Old n4d: return ret
+		return n4d.responses.build_successful_call_response(ret)
+		
 		
 	#def is_server_shutdown_enabled
 	
@@ -133,14 +145,20 @@ class ShutdownerManager:
 			variable=copy.deepcopy(self.internal_variable)
 		else:
 			if not self.check_variable(variable):
-				return {"status":False,"msg":"Variable does not have the expected structure"}
+				#Old n4d: return {"status":False,"msg":"Variable does not have the expected structure"}
+				return n4d.responses.build_failed_call_response("Variable does not have the expected structure")
+				
 			self.internal_variable=copy.deepcopy(variable)
 		
-		objects["VariablesManager"].set_variable("SHUTDOWNER",variable)
+		#Old n4d: objects["VariablesManager"].set_variable("SHUTDOWNER",variable)
+		
 		
 		self.check_server_shutodown()
+		self.core.set_variable("SHUTDOWNER",variable)
 	
-		return {"status":True,"msg":""}
+		#Old n4: return {"status":True,"msg":""}
+		return n4d.responses.build_successful_call_response()
+		
 		
 	#def save_variable
 
