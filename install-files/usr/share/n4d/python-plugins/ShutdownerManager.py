@@ -91,7 +91,7 @@ class ShutdownerManager:
 		return True
 		'''
 		self.core.check_clients()
-		return n4d.responses.build_successful_call_response(ret)
+		return n4d.responses.build_successful_call_response()
 		
 	#def manual_client_list_check
 
@@ -146,7 +146,7 @@ class ShutdownerManager:
 		else:
 			if not self.check_variable(variable):
 				#Old n4d: return {"status":False,"msg":"Variable does not have the expected structure"}
-				return n4d.responses.build_failed_call_response("Variable does not have the expected structure")
+				return n4d.responses.build_failed_call_response('',"Variable does not have the expected structure")
 				
 			self.internal_variable=copy.deepcopy(variable)
 		
