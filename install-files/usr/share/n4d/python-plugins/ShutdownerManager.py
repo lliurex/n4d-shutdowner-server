@@ -22,7 +22,7 @@ class ShutdownerManager:
 	def startup(self,options):
 		
 		#Old n4d:self.internal_variable=copy.deepcopy(objects["VariablesManager"].get_variable("SHUTDOWNER"))
-		self.internal_variable=self.core.get_variable("SHUTDOWNER")["return"]
+		self.internal_variable=self.core.get_variable("SHUTDOWNER").get('return',None)
 		
 		
 		if self.internal_variable==None:
