@@ -18,7 +18,7 @@
 		"teachers"
             ]
         },
-	"manual_client_list": {
+	"manual_client_list_check": {
 	    "allowed_groups": [
                 "sudo",
                 "admins",
