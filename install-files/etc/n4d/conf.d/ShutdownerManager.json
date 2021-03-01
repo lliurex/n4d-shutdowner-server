@@ -10,6 +10,11 @@
                 "anonymous"
             ]
         },
+         "is_server_shutdown_enabled": {
+            "allowed_groups": [
+                "anonymous"
+            ]
+        },
       
         "update_shutdown_signal": {
             "allowed_groups": [
@@ -32,6 +37,7 @@
 		"teachers"
             ]
         }
+       
       
     }
 }
