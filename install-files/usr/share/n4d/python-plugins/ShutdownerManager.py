@@ -143,9 +143,9 @@ class ShutdownerManager:
 
 				
 		ret={}
-		ret["status"]=self.internal_variable["cron_enabled"]
-		ret["msg"]=self.internal_variable["cron_content"] and self.internal_variable["server_shutdown"]
-		if ret["msg"]:
+		ret["status"]=self.internal_variable["cron_values"]["server_shutdown"]
+		ret["msg"]=self.internal_variable["server_cron"]["cron_server_content"]
+		if ret["status"]:
 			ret["cli_support"]="enabled"
 		else:
 			ret["cli_support"]="disabled"
