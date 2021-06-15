@@ -7,3 +7,4 @@ is_cron_enabled=anonymous
 update_shutdown_signal=sudo,admins,teachers
 manual_client_list_check=sudo,admins,teachers
 save_variable=sudo,admins,teachers
+is_server_shutdown_enabled=anonymous
