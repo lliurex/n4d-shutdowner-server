@@ -1,3 +1,9 @@
+n4d-shutdowner-server (0.3.13) bionic-updates; urgency=medium
+
+  * Added support to custom server shutdown
+  
+ -- Juan Ramon Pelegrina <juapesai@hotmail.com>  Tue, 15 Jun 2021 10:31:46 +0200
+
 n4d-shutdowner-server (0.3.12) bionic; urgency=medium
 
   * Adding sudo group
