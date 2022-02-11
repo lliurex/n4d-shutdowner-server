@@ -13,25 +13,38 @@ class ShutdownerManager:
 		self.cron_file="/etc/cron.d/lliurex-shutdowner"
 		self.thinclient_cron_file="/etc/cron.d/lliurex-shutdowner-thinclients"
 		self.server_cron_file="/etc/cron.d/lliurex-shutdowner-server"
+		self.variables_dir="/var/lib/n4d/variables-dir/"
 		
 		
 	#def init
 
 	
 	def startup(self,options):
-		
-		self.internal_variable=copy.deepcopy(objects["VariablesManager"].get_variable("SHUTDOWNER"))
-		
-		if self.internal_variable==None:
-			try:
 
-				self.initialize_variable()
-				objects["VariablesManager"].add_variable("SHUTDOWNER",copy.deepcopy(self.internal_variable),"","Shutdowner internal variable","lliurex-shutdowner")
-				
-			except Exception as e:
-				print e
-	
-		self.check_server_shutodown()
+		check_client=objects["VariablesManager"].get_variable("REMOTE_VARIABLES_SERVER")
+		if check_client!=None:
+			varFile=os.path.join(self.variables_dir,"SHUTDOWNER")
+			if os.path.exists(varFile):
+				try:
+					objects["VariablesManager"].variables.pop("SHUTDOWNER")
+					os.remove(varFile)
+				except:
+					pass
+
+		else:
+
+			self.internal_variable=copy.deepcopy(objects["VariablesManager"].get_variable("SHUTDOWNER"))
+		
+			if self.internal_variable==None:
+				try:
+
+					self.initialize_variable()
+					objects["VariablesManager"].add_variable("SHUTDOWNER",copy.deepcopy(self.internal_variable),"","Shutdowner internal variable","lliurex-shutdowner")
+					
+				except Exception as e:
+					print e
+		
+			self.check_server_shutodown()
 
 	#def startup
 
