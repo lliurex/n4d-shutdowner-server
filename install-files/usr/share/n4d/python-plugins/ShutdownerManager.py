@@ -23,20 +23,27 @@ class ShutdownerManager:
 	def startup(self,options):
 		
 		#Old n4d:self.internal_variable=copy.deepcopy(objects["VariablesManager"].get_variable("SHUTDOWNER"))
-		self.internal_variable=self.core.get_variable("SHUTDOWNER").get('return',None)
-		
-		
-		if self.internal_variable==None:
-			try:
+		check_client=self.core.get_variable("REMOTE_VARIABLES_SERVER").get('return',None)
 
-				self.initialize_variable()
-				#Old n4d: objects["VariablesManager"].add_variable("SHUTDOWNER",copy.deepcopy(self.internal_variable),"","Shutdowner internal variable","lliurex-shutdowner")
-				self.core.set_variable("SHUTDOWNER",self.internal_variable)
-					
-			except Exception as e:
-				print(str(e))
-	
-		self.check_server_shutodown()
+		if check_client!=None:
+			try:
+				ret=self.core.delete_variable("SHUTDOWNER")
+			except:
+				pass
+		else:
+			self.internal_variable=self.core.get_variable("SHUTDOWNER").get('return',None)
+		
+			if self.internal_variable==None:
+				try:
+
+					self.initialize_variable()
+					#Old n4d: objects["VariablesManager"].add_variable("SHUTDOWNER",copy.deepcopy(self.internal_variable),"","Shutdowner internal variable","lliurex-shutdowner")
+					self.core.set_variable("SHUTDOWNER",self.internal_variable)
+						
+				except Exception as e:
+					print(str(e))
+		
+			self.check_server_shutodown()
 
 	#def startup
 
