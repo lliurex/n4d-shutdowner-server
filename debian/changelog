@@ -1,3 +1,9 @@
+n4d-shutdowner-server (0.4.14) focal-updates; urgency=medium
+
+  * Fixed performance when in desktop with meta client
+  
+ -- Juan Ramon Pelegrina <juapesai@hotmail.com>  Mon, 14 Feb 2022 07:52:14 +0100
+
 n4d-shutdowner-server (0.4.13) focal; urgency=medium
 
   * Added support to configure a custom server shutdown
