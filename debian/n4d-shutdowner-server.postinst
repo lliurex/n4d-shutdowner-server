@@ -6,6 +6,9 @@ case "$1" in
    configure)
 
 	n4d-modules enable-plugin /etc/n4d/conf.d/ShutdownerManager.json || true
+	if dpkg --compare-versions "$2" lt 0.4.14; then
+		deb-systemd-invoke restart n4d || true
+	fi
 	
    ;;
 
