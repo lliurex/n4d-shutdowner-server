@@ -1,10 +1,13 @@
 #!/usr/bin/python3
 import sys
 import os
+import subprocess
 import copy
 import time
 import n4d.server.core as n4dcore
 import n4d.responses
+import xmlrpc.client as n4dclient
+import ssl
 
 class ShutdownerManager:
 	
@@ -23,9 +26,13 @@ class ShutdownerManager:
 	def startup(self,options):
 		
 		#Old n4d:self.internal_variable=copy.deepcopy(objects["VariablesManager"].get_variable("SHUTDOWNER"))
-		check_client=self.core.get_variable("REMOTE_VARIABLES_SERVER").get('return',None)
-
-		if check_client!=None:
+		#check_client=self.core.get_variable("REMOTE_VARIABLES_SERVER").get('return',None)
+		set_internal_variable=False
+		is_client=self._is_client_mode()
+		print(is_client)
+		
+		
+		if is_client:
 			try:
 				ret=self.core.delete_variable("SHUTDOWNER")
 			except:
@@ -281,5 +288,52 @@ class ShutdownerManager:
 				
 			return True
 		
-		
+	def _is_client_mode(self):
+
+		isClient=False
+		isDesktop=False
+	
+		try:
+			cmd='lliurex-version -v'
+			p=subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE)
+			result=p.communicate()[0]
+
+			if type(result) is bytes:
+				result=result.decode()
+
+			flavours = [ x.strip() for x in result.split(',') ]
+
+			for item in flavours:
+				if 'server' in item:
+					isClient=False
+					break
+				elif 'client' in item:
+					isClient=True
+				elif 'desktop' in item:
+					isDesktop=True
+			
+			if isClient:
+				if isDesktop:
+					if not self._check_connection_with_server():
+						isClient=False
+			
+			return isClient
+			
+		except Exception as e:
+			return False
+	
+	#def _is_client_mode
+
+	def _check_connection_with_server(self):
+
+		try:
+			context=ssl._create_unverified_context()
+			client=n4dclient.ServerProxy('https://server:9779',context=context,allow_none=True)
+			test=client.is_cron_enabled('','ShutdownerManager')
+			return True
+		except Exception as e:
+			return False
+
+	#def _check_connection_with_server
+	
 	#def build_thinclient_cron
