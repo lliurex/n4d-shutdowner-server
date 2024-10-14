@@ -336,4 +336,12 @@ class ShutdownerManager:
 
 	#def _check_connection_with_server
 	
-	#def build_thinclient_cron
+
+	def cancel_shutdown(self):
+		
+		command="shutdown -c"
+		os.system(command)
+		
+	#def cancel_shutdown
+
+#class ShutdownerManager
