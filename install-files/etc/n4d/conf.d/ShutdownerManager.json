@@ -36,8 +36,12 @@
                 "admins",
 		"teachers"
             ]
-        }
-       
-      
+        },
+	
+	"cancel_shutdown":{
+		"allowed_groups":[
+			"anonymous"
+		]
+	}
     }
 }
