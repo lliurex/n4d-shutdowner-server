@@ -16,8 +16,8 @@ class ShutdownerManager:
 		
 		self.core=n4dcore.Core.get_core()
 		self.cron_file="/etc/cron.d/lliurex-shutdowner"
-		self.thinclient_cron_file="/etc/cron.d/lliurex-shutdowner-thinclients"
-		self.server_cron_file="/etc/cron.d/lliurex-shutdowner-server"
+		self.desktop_cron_file="/etc/cron.d/lliurex-shutdowner-desktop"
+		self.adi_cron_file="/etc/cron.d/lliurex-shutdowner-adi"
 		
 		
 	#def init
@@ -25,11 +25,8 @@ class ShutdownerManager:
 	
 	def startup(self,options):
 		
-		#Old n4d:self.internal_variable=copy.deepcopy(objects["VariablesManager"].get_variable("SHUTDOWNER"))
-		#check_client=self.core.get_variable("REMOTE_VARIABLES_SERVER").get('return',None)
 		set_internal_variable=False
 		is_client=self._is_client_mode()
-		print(is_client)
 		
 		
 		if is_client:
@@ -44,7 +41,6 @@ class ShutdownerManager:
 				try:
 
 					self.initialize_variable()
-					#Old n4d: objects["VariablesManager"].add_variable("SHUTDOWNER",copy.deepcopy(self.internal_variable),"","Shutdowner internal variable","lliurex-shutdowner")
 					self.core.set_variable("SHUTDOWNER",self.internal_variable)
 						
 				except Exception as e:
@@ -186,7 +182,6 @@ class ShutdownerManager:
 			variable=copy.deepcopy(self.internal_variable)
 		else:
 			if not self.check_variable(variable):
-				#Old n4d: return {"status":False,"msg":"Variable does not have the expected structure"}
 				return n4d.responses.build_failed_call_response('',"Variable does not have the expected structure")
 				
 			self.internal_variable=copy.deepcopy(variable)
@@ -229,7 +224,7 @@ class ShutdownerManager:
 
 				server_cron=cron_content%(minute,hour,days,shutdown_cmd)
 
-				f=open(self.server_cron_file,"w")
+				f=open(self.adi_cron_file,"w")
 				f.write(server_cron)
 				f.close()
 				if os.path.exists(self.cron_file):
@@ -237,23 +232,22 @@ class ShutdownerManager:
 		else:
 			if os.path.exists(self.cron_file):
 				os.remove(self.cron_file)
-			if os.path.exists(self.server_cron_file):
-				os.remove(self.server_cron_file)	
+			if os.path.exists(self.adi_cron_file):
+				os.remove(self.adi_cron_file)
 			
-		self.build_thinclient_cron()
+		self.build_desktop_cron()
 		
 		return True
 		
 	#def check_server_shutdown
 	
 	
-	def build_thinclient_cron(self):
+	def build_desktop_cron(self):
 		
 		if self.internal_variable["cron_enabled"] and self.internal_variable["cron_values"]["server_shutdown"]:
 			if not self.internal_variable["server_cron"]["custom_shutdown"]:
-			# server will handle dialog calls its shutdown
-				if os.path.exists(self.thinclient_cron_file):
-					os.remove(self.thinclient_cron_file)
+				if os.path.exists(self.desktop_cron_file):
+					os.remove(self.desktop_cron_file)
 				return True
 	
 		
@@ -273,25 +267,25 @@ class ShutdownerManager:
 				count+=1
 			days=days.rstrip(",")
 			
-			thinclient_cron=cron_content%(minute,hour,days,shutdown_cmd)
+			desktop_cron=cron_content%(minute,hour,days,shutdown_cmd)
 			
-			f=open(self.thinclient_cron_file,"w")
-			f.write(thinclient_cron)
+			f=open(self.desktop_cron_file,"w")
+			f.write(desktop_cron)
 			f.close()
 			
 			return True
 			
 		else:
 			# nothing to do
-			if os.path.exists(self.thinclient_cron_file):
-				os.remove(self.thinclient_cron_file)
+			if os.path.exists(self.desktop_cron_file):
+				os.remove(self.desktop_cron_file)
 				
 			return True
 		
 	def _is_client_mode(self):
 
 		isClient=False
-		isDesktop=False
+		isDesktop=True
 	
 		try:
 			cmd='lliurex-version -v'
@@ -304,19 +298,14 @@ class ShutdownerManager:
 			flavours = [ x.strip() for x in result.split(',') ]
 
 			for item in flavours:
-				if 'server' in item:
-					isClient=False
+				if 'adi' in item:
+					isDesktop=False
 					break
-				elif 'client' in item:
+			
+			if isDesktop:
+				if self._check_connection_with_adi():
 					isClient=True
-				elif 'desktop' in item:
-					isDesktop=True
-			
-			if isClient:
-				if isDesktop:
-					if not self._check_connection_with_server():
-						isClient=False
-			
+
 			return isClient
 			
 		except Exception as e:
@@ -324,7 +313,7 @@ class ShutdownerManager:
 	
 	#def _is_client_mode
 
-	def _check_connection_with_server(self):
+	def _check_connection_with_adi(self):
 
 		try:
 			context=ssl._create_unverified_context()
@@ -334,7 +323,7 @@ class ShutdownerManager:
 		except Exception as e:
 			return False
 
-	#def _check_connection_with_server
+	#def _check_connection_with_adi
 	
 
 	def cancel_shutdown(self):
