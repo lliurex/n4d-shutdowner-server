@@ -18,18 +18,18 @@ class ShutdownerManager:
 		self.cron_file="/etc/cron.d/lliurex-shutdowner"
 		self.thinclient_cron_file="/etc/cron.d/lliurex-shutdowner-thinclients"
 		self.server_cron_file="/etc/cron.d/lliurex-shutdowner-server"
-		
+		self.adiServer="/usr/bin/natfree-server"
+		self.adiClient="/usr/bin/natfree-client"
+		self.isClientizedDesktop=False
+		self.keepCronFile=False
+		self.isADI=False
 		
 	#def init
 
-	
 	def startup(self,options):
 		
-		#Old n4d:self.internal_variable=copy.deepcopy(objects["VariablesManager"].get_variable("SHUTDOWNER"))
-		#check_client=self.core.get_variable("REMOTE_VARIABLES_SERVER").get('return',None)
 		set_internal_variable=False
 		is_client=self._is_client_mode()
-		print(is_client)
 		
 		
 		if is_client:
@@ -44,7 +44,6 @@ class ShutdownerManager:
 				try:
 
 					self.initialize_variable()
-					#Old n4d: objects["VariablesManager"].add_variable("SHUTDOWNER",copy.deepcopy(self.internal_variable),"","Shutdowner internal variable","lliurex-shutdowner")
 					self.core.set_variable("SHUTDOWNER",self.internal_variable)
 						
 				except Exception as e:
@@ -146,16 +145,13 @@ class ShutdownerManager:
 		else:
 			ret["cli_support"]="disabled"
 		
-		#Old n4d: return ret
 		return n4d.responses.build_successful_call_response(ret)
 		
 		
 	#def is_cron_enabled
 	
-	
 	def is_server_shutdown_enabled(self):
 
-				
 		ret={}
 		ret["status"]=self.internal_variable["cron_values"]["server_shutdown"]
 		ret["msg"]=self.internal_variable["server_cron"]["cron_server_content"]
@@ -165,21 +161,20 @@ class ShutdownerManager:
 			ret["cli_support"]="disabled"
 		
 		ret["custom_shutdown"]=self.internal_variable["server_cron"]["custom_shutdown"]	
-		#Old n4d: return ret
+		
 		return n4d.responses.build_successful_call_response(ret)
 		
-		
+	
 	#def is_server_shutdown_enabled
 	
-
 	def update_shutdown_signal(self):
 		
 		self.internal_variable["shutdown_signal"]=time.time()
+		
 		return self.save_variable()
 		
 	#def update_shutdown_signal
 
-	
 	def save_variable(self,variable=None):
 
 		if variable==None:
@@ -189,17 +184,18 @@ class ShutdownerManager:
 				#Old n4d: return {"status":False,"msg":"Variable does not have the expected structure"}
 				return n4d.responses.build_failed_call_response('',"Variable does not have the expected structure")
 				
+			variable["cron_content"]=variable["cron_content"].replace("&gt;&gt;",">>")
+			variable["server_cron"]["cron_server_content"]=variable["server_cron"]["cron_server_content"].replace("&gt;&gt;",">>")
 			self.internal_variable=copy.deepcopy(variable)
 		
 		#Old n4d: objects["VariablesManager"].set_variable("SHUTDOWNER",variable)
 		
 		
+		self.keepCronFile=False
 		self.check_server_shutodown()
 		self.core.set_variable("SHUTDOWNER",variable)
 	
-		#Old n4: return {"status":True,"msg":""}
 		return n4d.responses.build_successful_call_response()
-		
 		
 	#def save_variable
 
@@ -208,6 +204,7 @@ class ShutdownerManager:
 			
 		if self.internal_variable["cron_enabled"] and self.internal_variable["cron_values"]["server_shutdown"]:
 			if not self.internal_variable["server_cron"]["custom_shutdown"]:
+				tmpCronContent=self.internal_variable["cron_content"].replace("&gt;&gt;",">>")
 				f=open(self.cron_file,"w")
 				f.write(self.internal_variable["cron_content"])
 				f.close()
@@ -228,6 +225,7 @@ class ShutdownerManager:
 				days=days.rstrip(",")
 
 				server_cron=cron_content%(minute,hour,days,shutdown_cmd)
+				server_cron=server_cron.replace("&gt;&gt;",">>")
 
 				f=open(self.server_cron_file,"w")
 				f.write(server_cron)
@@ -236,16 +234,21 @@ class ShutdownerManager:
 					os.remove(self.cron_file)
 		else:
 			if os.path.exists(self.cron_file):
-				os.remove(self.cron_file)
+				if self.isClientizedDesktop:
+					self.keepCronFile=True
+					os.rename(self.cron_file,self.thinclient_cron_file)
+					self._update_internal_variable()
+				else:
+					os.remove(self.cron_file)
 			if os.path.exists(self.server_cron_file):
 				os.remove(self.server_cron_file)	
 			
-		self.build_thinclient_cron()
-		
+		if not self.isADI:
+			self.build_thinclient_cron()
+
 		return True
 		
 	#def check_server_shutdown
-	
 	
 	def build_thinclient_cron(self):
 		
@@ -274,7 +277,7 @@ class ShutdownerManager:
 			days=days.rstrip(",")
 			
 			thinclient_cron=cron_content%(minute,hour,days,shutdown_cmd)
-			
+			thinclient_cron=thinclient_cron.replace("&gt;&gt;",">>")
 			f=open(self.thinclient_cron_file,"w")
 			f.write(thinclient_cron)
 			f.close()
@@ -284,14 +287,15 @@ class ShutdownerManager:
 		else:
 			# nothing to do
 			if os.path.exists(self.thinclient_cron_file):
-				os.remove(self.thinclient_cron_file)
-				
+				if not self.keepCronFile:
+					os.remove(self.thinclient_cron_file)
+
 			return True
 		
 	def _is_client_mode(self):
 
 		isClient=False
-		isDesktop=False
+		self.isDesktop=False
 	
 		try:
 			cmd='lliurex-version -v'
@@ -310,12 +314,20 @@ class ShutdownerManager:
 				elif 'client' in item:
 					isClient=True
 				elif 'desktop' in item:
-					isDesktop=True
-			
+					self.isDesktop=True
+					if not os.path.exists(self.adiServer):
+						if os.path.exists(self.adiClient):
+							isClient=True
+					else:
+						self.isADI=True
+
 			if isClient:
-				if isDesktop:
+				if self.isDesktop:
 					if not self._check_connection_with_server():
 						isClient=False
+						self.isClientizedDesktop=True
+					else:
+						self.isClientizedDesktop=False
 			
 			return isClient
 			
@@ -335,5 +347,35 @@ class ShutdownerManager:
 			return False
 
 	#def _check_connection_with_server
+
+	def _update_internal_variable(self):
+
+		if os.path.exists(self.thinclient_cron_file):
+			with open(self.thinclient_cron_file,'r') as fd:
+				content=fd.readline()
+		try:
+			parseContent=content.split(" ")
+			self.internal_variable["cron_enabled"]=True
+			self.internal_variable["cron_content"]=content.replace("&gt;&gt;",">>")
+			self.internal_variable["cron_values"]["hour"]=parseContent[1]
+			self.internal_variable["cron_values"]["minute"]=parseContent[0]
+			tmpWeekdays=[False,False,False,False,False]
+			for item in parseContent[4].split(","):
+				if item=="1":
+					tmpWeekdays[0]=True
+				elif item=="2":
+					tmpWeekdays[1]=True
+				elif item=="3":
+					tmpWeekdays[2]=True
+				elif item=="4":
+					tmpWeekdays[3]=True
+				elif item=="5":
+					tmpWeekdays[4]=True
+			self.internal_variable["cron_values"]["weekdays"]=tmpWeekdays
+			self.core.set_variable("SHUTDOWNER",self.internal_variable)
+		except:
+			pass
+
+	#def _update_internal_variable
 	
-	#def build_thinclient_cron
+#class ShutdownerManager
