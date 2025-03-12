@@ -38,6 +38,13 @@ class ShutdownerManager:
 			except:
 				pass
 		else:
+			if self.isADI:
+				if os.path.exists(self.thinclient_cron_file):
+					os.remove(self.thinclient_cron_file)
+			elif self.isDesktop:
+				if os.path.exists(self.server_cron_file):
+					os.remove(self.server_cron_file)
+							
 			self.internal_variable=self.core.get_variable("SHUTDOWNER").get('return',None)
 		
 			if self.internal_variable==None:
@@ -216,27 +223,28 @@ class ShutdownerManager:
 				if os.path.exists(self.server_cron_file):
 					os.remove(self.server_cron_file)	
 			else:
-				shutdown_cmd="/usr/sbin/shutdown-server-lliurex"
-				cron_content="%s %s * * %s root %s >> /var/log/syslog\n"
-				minute=self.internal_variable["server_cron"]["cron_server_values"]["minute"]
-				hour=self.internal_variable["server_cron"]["cron_server_values"]["hour"]
-				days=""
-				count=1
+				if not self.isADI and not self.isDesktop:
+					shutdown_cmd="/usr/sbin/shutdown-server-lliurex"
+					cron_content="%s %s * * %s root %s >> /var/log/syslog\n"
+					minute=self.internal_variable["server_cron"]["cron_server_values"]["minute"]
+					hour=self.internal_variable["server_cron"]["cron_server_values"]["hour"]
+					days=""
+					count=1
 
-				for day in self.internal_variable["server_cron"]["cron_server_values"]["weekdays"]:
-					if day:
-						days+="%s,"%count
-					count+=1
-				days=days.rstrip(",")
+					for day in self.internal_variable["server_cron"]["cron_server_values"]["weekdays"]:
+						if day:
+							days+="%s,"%count
+						count+=1
+					days=days.rstrip(",")
 
-				server_cron=cron_content%(minute,hour,days,shutdown_cmd)
-				server_cron=server_cron.replace("&gt;&gt;",">>")
+					server_cron=cron_content%(minute,hour,days,shutdown_cmd)
+					server_cron=server_cron.replace("&gt;&gt;",">>")
 
-				f=open(self.server_cron_file,"w")
-				f.write(server_cron)
-				f.close()
-				if os.path.exists(self.cron_file):
-					os.remove(self.cron_file)
+					f=open(self.server_cron_file,"w")
+					f.write(server_cron)
+					f.close()
+					if os.path.exists(self.cron_file):
+						os.remove(self.cron_file)
 		else:
 			if os.path.exists(self.cron_file):
 				if self.isClientizedDesktop:
