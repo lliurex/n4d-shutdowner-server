@@ -137,13 +137,16 @@ class ShutdownerManager:
 	def is_cron_enabled(self):
 		
 		ret={}
-		ret["status"]=self.internal_variable["cron_enabled"]
-		ret["msg"]=self.internal_variable["cron_content"]
-		
-		if ret["status"]:
-			ret["cli_support"]="enabled"
-		else:
-			ret["cli_support"]="disabled"
+		try:
+			ret["status"]=self.internal_variable["cron_enabled"]
+			ret["msg"]=self.internal_variable["cron_content"]
+			
+			if ret["status"]:
+				ret["cli_support"]="enabled"
+			else:
+				ret["cli_support"]="disabled"
+		except:
+			pass
 		
 		return n4d.responses.build_successful_call_response(ret)
 		
@@ -153,15 +156,17 @@ class ShutdownerManager:
 	def is_server_shutdown_enabled(self):
 
 		ret={}
-		ret["status"]=self.internal_variable["cron_values"]["server_shutdown"]
-		ret["msg"]=self.internal_variable["server_cron"]["cron_server_content"]
-		if ret["status"]:
-			ret["cli_support"]="enabled"
-		else:
-			ret["cli_support"]="disabled"
-		
-		ret["custom_shutdown"]=self.internal_variable["server_cron"]["custom_shutdown"]	
-		
+		try:
+			ret["status"]=self.internal_variable["cron_values"]["server_shutdown"]
+			ret["msg"]=self.internal_variable["server_cron"]["cron_server_content"]
+			if ret["status"]:
+				ret["cli_support"]="enabled"
+			else:
+				ret["cli_support"]="disabled"
+			
+			ret["custom_shutdown"]=self.internal_variable["server_cron"]["custom_shutdown"]	
+		except:
+			pass
 		return n4d.responses.build_successful_call_response(ret)
 		
 	
