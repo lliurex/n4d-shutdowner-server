@@ -23,6 +23,7 @@ class ShutdownerManager:
 		self.isClientizedDesktop=False
 		self.keepCronFile=False
 		self.isADI=False
+		self.runAsServer=False
 		
 	#def init
 
@@ -223,7 +224,7 @@ class ShutdownerManager:
 				if os.path.exists(self.server_cron_file):
 					os.remove(self.server_cron_file)	
 			else:
-				if not self.isADI and not self.isDesktop:
+				if self.runAsServer:
 					shutdown_cmd="/usr/sbin/shutdown-server-lliurex"
 					cron_content="%s %s * * %s root %s >> /var/log/syslog\n"
 					minute=self.internal_variable["server_cron"]["cron_server_values"]["minute"]
@@ -323,6 +324,7 @@ class ShutdownerManager:
 			for item in flavours:
 				if 'server' in item:
 					isClient=False
+					self.runAsServer=True
 					break
 				elif 'client' in item:
 					isClient=True
@@ -333,6 +335,7 @@ class ShutdownerManager:
 							isClient=True
 					else:
 						self.isADI=True
+						self.runAsServer=True
 
 			if isClient:
 				if self.isDesktop:
