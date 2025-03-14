@@ -1,3 +1,9 @@
+n4d-shutdowner-server (0.14.18.2) jammy-testing; urgency=medium
+
+  * Fixed minor bug
+  
+ -- Juan Ramon Pelegrina <juapesai@hotmail.com>  Fri, 14 Mar 2025 10:44:17 +0100
+
 n4d-shutdowner-server (0.14.18.1) jammy-testing; urgency=medium
 
   * Clean code
