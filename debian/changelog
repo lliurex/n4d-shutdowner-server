@@ -1,3 +1,9 @@
+n4d-shutdowner-server (0.24.17) noble; urgency=medium
+
+  * Clean code
+
+ -- Juan Ramon Pelegrina <juapesai@hotmail.com>  Fri, 14 Mar 2025 11:07:18 +0100
+
 n4d-shutdowner-server (0.24.16) noble; urgency=medium
 
   * Changed to support new classroom model
