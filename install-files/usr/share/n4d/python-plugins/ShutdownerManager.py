@@ -203,9 +203,9 @@ class ShutdownerManager:
 			
 		if self.internal_variable["cron_enabled"] and self.internal_variable["cron_values"]["server_shutdown"]:
 			if not self.internal_variable["server_cron"]["custom_shutdown"]:
-				tmpCronContent=self.internal_variable["cron_content"].replace("&gt;&gt;",">>")
+				tmp_cron_content=self.internal_variable["cron_content"].replace("&gt;&gt;",">>")
 				f=open(self.cron_file,"w")
-				f.write(self.internal_variable["cron_content"])
+				f.write(tmp_cron_content)
 				f.close()
 				if os.path.exists(self.adi_cron_file):
 					os.remove(self.adi_cron_file)	
@@ -318,7 +318,7 @@ class ShutdownerManager:
 		
 			if self.is_desktop:
 				if os.path.exists(self.adi_client):
-					if self._check_connection_with_server():
+					if self._check_connection_with_adi():
 						is_client=True
 						self.is_clientized_desktop=False
 					else:
@@ -331,7 +331,7 @@ class ShutdownerManager:
 	
 	#def _is_client_mode
 
-	def _check_connection_with_server(self):
+	def _check_connection_with_adi(self):
 
 		try:
 			context=ssl._create_unverified_context()
