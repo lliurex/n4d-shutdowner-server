@@ -206,9 +206,9 @@ class ShutdownerManager:
 			
 		if self.internal_variable["cron_enabled"] and self.internal_variable["cron_values"]["server_shutdown"]:
 			if not self.internal_variable["server_cron"]["custom_shutdown"]:
-				tmpCronContent=self.internal_variable["cron_content"].replace("&gt;&gt;",">>")
+				tmp_cron_content=self.internal_variable["cron_content"].replace("&gt;&gt;",">>")
 				f=open(self.cron_file,"w")
-				f.write(self.internal_variable["cron_content"])
+				f.write(tmp_cron_content)
 				f.close()
 				if os.path.exists(self.server_cron_file):
 					os.remove(self.server_cron_file)	
