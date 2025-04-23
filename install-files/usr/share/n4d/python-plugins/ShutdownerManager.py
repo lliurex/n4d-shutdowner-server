@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 import sys
 import os
+import threading
 import subprocess
 import copy
 import time
@@ -25,19 +26,19 @@ class ShutdownerManager:
 		self.is_adi=False
 		self.run_as_server=False
 		self.is_desktop=False
+		self.is_adi_client=False
 		
 	#def init
 
 	def startup(self,options):
 		
 		set_internal_variable=False
-		is_client=self._is_client_mode()
-		
-		if is_client:
-			try:
-				ret=self.core.delete_variable("SHUTDOWNER")
-			except:
-				pass
+		may_be_client=self._is_client_mode()
+
+		if may_be_client:
+			t=threading.Thread(target=self._check_connection)
+			t.daemon=True
+			t.start()
 		else:
 			if self.is_adi:
 				if os.path.exists(self.thinclient_cron_file):
@@ -45,21 +46,47 @@ class ShutdownerManager:
 			elif self.is_desktop:
 				if os.path.exists(self.server_cron_file):
 					os.remove(self.server_cron_file)
-							
-			self.internal_variable=self.core.get_variable("SHUTDOWNER").get('return',None)
-		
-			if self.internal_variable==None:
-				try:
-
-					self.initialize_variable()
-					self.core.set_variable("SHUTDOWNER",self.internal_variable)
-						
-				except Exception as e:
-					print(str(e))
-		
-			self.check_server_shutodown()
+			self._startup()
 
 	#def startup
+	
+	def _startup(self):
+		
+		self.internal_variable=self.core.get_variable("SHUTDOWNER").get('return',None)
+		if self.internal_variable==None:
+			try:
+				self.initialize_variable()
+				self.core.set_variable("SHUTDOWNER",self.internal_variable)
+			except Exception as e:
+				print(str(e))
+		
+		self.check_server_shutodown()
+		
+	#def _startup
+	
+	def _check_connection(self):
+		
+		delete_var=True
+		if self.is_adi_client:
+			self._startup()
+			max_retry=600
+			count=0
+			while True:
+				if count>=max_retry:
+					break
+				count+=1
+				time.sleep(1)
+			
+		if not self._check_connection_with_server():
+			delete_var=False
+			
+		if delete_var:
+			try:
+				ret=self.core.delete_variable("SHUTDOWNER")
+			except:
+				pass
+		
+	#def _check_connection
 
 	def initialize_variable(self):
 		
@@ -169,6 +196,7 @@ class ShutdownerManager:
 			ret["custom_shutdown"]=self.internal_variable["server_cron"]["custom_shutdown"]	
 		except:
 			pass
+
 		return n4d.responses.build_successful_call_response(ret)
 		
 	#def is_server_shutdown_enabled
@@ -236,19 +264,31 @@ class ShutdownerManager:
 					if os.path.exists(self.cron_file):
 						os.remove(self.cron_file)
 		else:
-			if os.path.exists(self.cron_file):
-				if self.is_clientized_desktop:
-					self.keep_cron_file=True
-					os.rename(self.cron_file,self.thinclient_cron_file)
-					self._update_internal_variable()
-				else:
-					os.remove(self.cron_file)
 			if os.path.exists(self.server_cron_file):
-				os.remove(self.server_cron_file)	
+				os.remove(self.server_cron_file)
+			if not self.is_desktop or self.is_adi:
+				if os.path.exists(self.cron_file):
+					os.remove(self.cron_file)
 			
-		if not self.is_adi:
+		if self.is_desktop:
+			if not self.is_adi:
+				if os.path.exists(self.cron_file):
+					if self.is_clientized_desktop or self.is_adi_client:
+						self.keep_cron_file=True
+						os.rename(self.cron_file,self.thinclient_cron_file)
+						self._update_internal_variable()
+					else:
+						os.remove(self.cron_file)
+				
+				self.build_thinclient_cron()
+			'''
+			else:
+				if os.path.exists(self.cron_file):
+					os.remove(self.cron_file)					
+			'''
+		else:
 			self.build_thinclient_cron()
-
+			
 		return True
 		
 	#def check_server_shutdown
@@ -258,9 +298,11 @@ class ShutdownerManager:
 		if self.internal_variable["cron_enabled"] and self.internal_variable["cron_values"]["server_shutdown"]:
 			if not self.internal_variable["server_cron"]["custom_shutdown"]:
 			# server will handle dialog calls its shutdown
-				if os.path.exists(self.thinclient_cron_file):
-					os.remove(self.thinclient_cron_file)
-				return True
+				if not self.is_desktop:
+					if os.path.exists(self.thinclient_cron_file):
+						os.remove(self.thinclient_cron_file)
+
+					return True
 	
 		if self.internal_variable["cron_enabled"]:
 			
@@ -313,6 +355,7 @@ class ShutdownerManager:
 				if 'server' in item:
 					isClient=False
 					self.run_as_server=True
+					self.is_desktop=False
 					break
 				elif 'client' in item:
 					isClient=True
@@ -321,17 +364,10 @@ class ShutdownerManager:
 					if not os.path.exists(self.adi_server):
 						if os.path.exists(self.adi_client):
 							isClient=True
+							self.is_adi_client=True
 					else:
 						self.is_adi=True
 						self.run_as_server=True
-
-			if isClient:
-				if self.is_desktop:
-					if not self._check_connection_with_server():
-						isClient=False
-						self.is_clientized_desktop=True
-					else:
-						self.is_clientized_desktop=False
 			
 			return isClient
 			
@@ -346,8 +382,11 @@ class ShutdownerManager:
 			context=ssl._create_unverified_context()
 			client=n4dclient.ServerProxy('https://server:9779',context=context,allow_none=True)
 			test=client.is_cron_enabled('','ShutdownerManager')
+			self.is_clientized_desktop=False
 			return True
 		except Exception as e:
+			self.is_clientized_desktop=True
+			self.is_adi_client=False
 			return False
 
 	#def _check_connection_with_server
