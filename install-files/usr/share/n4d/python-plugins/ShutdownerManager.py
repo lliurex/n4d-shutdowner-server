@@ -9,6 +9,7 @@ import n4d.server.core as n4dcore
 import n4d.responses
 import xmlrpc.client as n4dclient
 import ssl
+import re
 
 class ShutdownerManager:
 	
@@ -68,6 +69,7 @@ class ShutdownerManager:
 		
 		delete_var=True
 		if self.is_adi_client:
+			'''
 			self._startup()
 			max_retry=600
 			count=0
@@ -79,7 +81,34 @@ class ShutdownerManager:
 			
 		if not self._check_connection_with_server():
 			delete_var=False
-			
+		'''
+			while True:
+				init_session=self._check_open_session()
+				if init_session:
+					break
+				time.sleep(60)
+
+			self._startup()
+			max_retry=5
+			time_to_check=120
+			time_count=0
+			count_retry=0
+			while True:
+				if time_count>=time_to_check:
+					delete_var=self._check_connection_with_server()
+					if delete_var:
+						break
+					else:
+						if count_retry<max_retry:
+							count_retry+=1
+							time_count=0
+						else:
+							break
+				else:	
+					time_count+=1
+				
+				time.sleep(1)
+		
 		if delete_var:
 			try:
 				ret=self.core.delete_variable("SHUTDOWNER")
@@ -420,5 +449,27 @@ class ShutdownerManager:
 			pass
 
 	#def _update_internal_variable
+
+	def _check_open_session(self):
+
+		res = subprocess.run([ "loginctl", "--no-legend", "list-sessions" ],stdout=subprocess.PIPE)
+
+		for line in res.stdout.decode().split("\n"):
+			if len(line)>0:
+				session, uid, user, rest = re.split( r"\s+", line, maxsplit=3 )
+				if user!="sddm":
+					info = subprocess.run([ "loginctl", "show-session", session ],stdout=subprocess.PIPE)
+					data={}
+					for infoline in info.stdout.decode().split("\n"):
+						if len(infoline)>0:
+							key, value = re.split( "=", infoline, maxsplit=1 )
+							data[key] = value
+
+							if data.get("Active")=="yes" and (data.get("Type")=="x11" or data.get("Type")=="wayland"):
+								return True
+		return False
+
+	#def _check_open_session
+
 	
 #class ShutdownerManager
