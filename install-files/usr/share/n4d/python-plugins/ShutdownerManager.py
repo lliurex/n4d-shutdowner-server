@@ -92,7 +92,7 @@ class ShutdownerManager:
 			max_retry=5
 			time_to_check=120
 			time_count=0
-			count_retry=0
+			count_retry=1
 			while True:
 				if time_count>=time_to_check:
 					delete_var=self._check_connection_with_server()
