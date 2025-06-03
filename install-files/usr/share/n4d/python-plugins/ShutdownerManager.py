@@ -19,7 +19,7 @@ class ShutdownerManager:
 		self.cron_file="/etc/cron.d/lliurex-shutdowner"
 		self.desktop_cron_file="/etc/cron.d/lliurex-shutdowner-desktop"
 		self.adi_cron_file="/etc/cron.d/lliurex-shutdowner-adi"
-		self.adi_client="/usr/bin/natfree-client"
+		self.adi_client="/usr/bin/natfree-tie"
 		self.is_clientized_desktop=False
 		self.keep_cron_file=False
 		self.is_adi=False
