@@ -20,8 +20,8 @@ class ShutdownerManager:
 		self.cron_file="/etc/cron.d/lliurex-shutdowner"
 		self.thinclient_cron_file="/etc/cron.d/lliurex-shutdowner-thinclients"
 		self.server_cron_file="/etc/cron.d/lliurex-shutdowner-server"
-		self.adi_server="/usr/bin/natfree-server"
-		self.adi_client="/usr/bin/natfree-client"
+		self.adi_server="/usr/bin/natfree-adi"
+		self.adi_client="/usr/bin/natfree-tie"
 		self.is_clientized_desktop=False
 		self.keep_cron_file=False
 		self.is_adi=False
