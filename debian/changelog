@@ -1,3 +1,9 @@
+n4d-shutdowner-server (0.24.20) noble; urgency=medium
+
+  * Replaced natfree-client by natfree-tie
+  
+ -- Juan Ramon Pelegrina <juapesai@hotmail.com>  Tue, 03 Jun 2025 08:25:57 +0200
+
 n4d-shutdowner-server (0.24.19) noble; urgency=medium
 
   * Improved process to detect connection with ADI
