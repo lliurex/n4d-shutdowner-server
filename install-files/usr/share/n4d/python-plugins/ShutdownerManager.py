@@ -13,6 +13,7 @@ import re
 
 class ShutdownerManager:
 	
+	NATFREE_STARTUP=True
 
 	def __init__(self):
 		
@@ -28,6 +29,9 @@ class ShutdownerManager:
 		self.run_as_server=False
 		self.is_desktop=False
 		self.is_adi_client=False
+
+		if os.path.exists(self.adi_server):
+			ShutdownerManager.NATFREE_STARTUP=False
 		
 	#def init
 
@@ -69,30 +73,12 @@ class ShutdownerManager:
 		
 		delete_var=True
 		if self.is_adi_client:
-			'''
 			self._startup()
-			max_retry=600
-			count=0
-			while True:
-				if count>=max_retry:
-					break
-				count+=1
-				time.sleep(1)
-			
-		if not self._check_connection_with_server():
-			delete_var=False
-		'''
-			while True:
-				init_session=self._check_open_session()
-				if init_session:
-					break
-				time.sleep(60)
-
-			self._startup()
-			max_retry=5
-			time_to_check=120
+			max_retry=10
+			time_to_check=1
 			time_count=0
 			count_retry=1
+
 			while True:
 				if time_count>=time_to_check:
 					delete_var=self._check_connection_with_server()
@@ -253,7 +239,10 @@ class ShutdownerManager:
 		
 		self.keep_cron_file=False
 		self.check_server_shutodown()
-		self.core.set_variable("SHUTDOWNER",variable)
+		try:
+			self.core.set_variable("SHUTDOWNER",variable)
+		except:
+			pass
 	
 		return n4d.responses.build_successful_call_response()
 		
@@ -449,27 +438,5 @@ class ShutdownerManager:
 			pass
 
 	#def _update_internal_variable
-
-	def _check_open_session(self):
-
-		res = subprocess.run([ "loginctl", "--no-legend", "list-sessions" ],stdout=subprocess.PIPE)
-
-		for line in res.stdout.decode().split("\n"):
-			if len(line)>0:
-				session, uid, user, rest = re.split( r"\s+", line, maxsplit=3 )
-				if user!="sddm":
-					info = subprocess.run([ "loginctl", "show-session", session ],stdout=subprocess.PIPE)
-					data={}
-					for infoline in info.stdout.decode().split("\n"):
-						if len(infoline)>0:
-							key, value = re.split( "=", infoline, maxsplit=1 )
-							data[key] = value
-
-							if data.get("Active")=="yes" and (data.get("Type")=="x11" or data.get("Type")=="wayland"):
-								return True
-		return False
-
-	#def _check_open_session
-
-	
+		
 #class ShutdownerManager
