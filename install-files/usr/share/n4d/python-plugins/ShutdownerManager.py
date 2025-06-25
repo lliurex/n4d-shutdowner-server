@@ -230,7 +230,10 @@ class ShutdownerManager:
 			variable=copy.deepcopy(self.internal_variable)
 		else:
 			if not self.check_variable(variable):
-				return n4d.responses.build_failed_call_response('',"Variable does not have the expected structure")
+				ret={}
+				ret["status"]=False
+				ret["msg"]="Variable does not have the expected structure"
+				return n4d.responses.build_successful_call_response(ret)
 				
 			variable["cron_content"]=variable["cron_content"].replace("&gt;&gt;",">>")
 			variable["server_cron"]["cron_server_content"]=variable["server_cron"]["cron_server_content"].replace("&gt;&gt;",">>")
@@ -418,8 +421,8 @@ class ShutdownerManager:
 			parsed_content=content.split(" ")
 			self.internal_variable["cron_enabled"]=True
 			self.internal_variable["cron_content"]=content.replace("&gt;&gt;",">>")
-			self.internal_variable["cron_values"]["hour"]=parsed_content[1]
-			self.internal_variable["cron_values"]["minute"]=parsed_content[0]
+			self.internal_variable["cron_values"]["hour"]=int(parsed_content[1])
+			self.internal_variable["cron_values"]["minute"]=int(parsed_content[0])
 			tmp_weekdays=[False,False,False,False,False]
 			for item in parsed_content[4].split(","):
 				if item=="1":
