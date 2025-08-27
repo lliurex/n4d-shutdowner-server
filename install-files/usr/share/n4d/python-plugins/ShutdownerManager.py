@@ -13,6 +13,8 @@ import re
 
 class ShutdownerManager:
 	
+	NATFREE_STARTUP=True
+
 	def __init__(self):
 		
 		self.core=n4dcore.Core.get_core()
@@ -20,16 +22,20 @@ class ShutdownerManager:
 		self.desktop_cron_file="/etc/cron.d/lliurex-shutdowner-desktop"
 		self.adi_cron_file="/etc/cron.d/lliurex-shutdowner-adi"
 		self.adi_client="/usr/bin/natfree-tie"
-		self.is_clientized_desktop=False
+		self.adi_server="/usr/bin/natfree-adi"
 		self.keep_cron_file=False
 		self.is_adi=False
 		self.is_adi_client=False
 		self.version_reference=["adi","desktop"]
+
+		if os.path.exists(self.adi_server):
+			ShutdownerManager.NATFREE_STARTUP=False
 		
 	#def init
 
 	def startup(self,options):
 		
+		set_internal_variable=False
 		may_be_client=self._is_client_mode()
 
 		if may_be_client:
@@ -66,49 +72,29 @@ class ShutdownerManager:
 	def _check_connection(self):
 		
 		delete_var=True
+		if self.is_adi_client:
+			self._startup()
+			max_retry=10
+			time_to_check=1
+			time_count=0
+			count_retry=1
 
-		'''
-		self._startup()
-		max_retry=600
-		count=0
-		while True:
-			if count>=max_retry:
-				break
-			count+=1
-			time.sleep(1)
-			
-		if not self._check_connection_with_adi():
-			delete_var=False
-		'''	
-		while True:
-			init_session=self._check_open_session()
-			if init_session:
-				break
-			time.sleep(60)
-
-		self._startup()
-		max_retry=5
-		time_to_check=120
-		time_count=0
-		count_retry=1
-
-		while True:
-			
-			if time_count>=time_to_check:
-				delete_var=self._check_connection_with_adi()
-				if delete_var:
-					break
-				else:
-					if count_retry<max_retry:
-						count_retry+=1
-						time_count=0
-					else:
+			while True:
+				if time_count>=time_to_check:
+					delete_var=self._check_connection_with_adi()
+					if delete_var:
 						break
-			else:	
-				time_count+=1
+					else:
+						if count_retry<max_retry:
+							count_retry+=1
+							time_count=0
+						else:
+							break
+				else:	
+					time_count+=1
+				
+				time.sleep(1)
 		
-			time.sleep(1)
-
 		if delete_var:
 			try:
 				ret=self.core.delete_variable("SHUTDOWNER")
@@ -354,9 +340,17 @@ class ShutdownerManager:
 	def _is_client_mode(self):
 
 		is_client=False
-		self.is_desktop=True
+
+		if os.path.exists(self.adi_server):
+			self.is_adi=True
+		else:
+			if os.path.exists(self.adi_client):
+				is_client=True
+				self.is_adi_client=True
+
+		return is_client
+		'''
 		flavours=[]
-	
 		try:
 			cmd='lliurex-version -v'
 			p=subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE)
@@ -384,7 +378,7 @@ class ShutdownerManager:
 			
 		except Exception as e:
 			return False
-	
+		'''
 	#def _is_client_mode
 
 	def _check_connection_with_adi(self):
@@ -437,25 +431,4 @@ class ShutdownerManager:
 		
 	#def cancel_shutdown
 	
-	def _check_open_session(self):
-
-		res = subprocess.run([ "loginctl", "--no-legend", "list-sessions" ],stdout=subprocess.PIPE)
-
-		for line in res.stdout.decode().split("\n"):
-			if len(line)>0:
-				session, uid, user, rest = re.split( r"\s+", line, maxsplit=3 )
-				if user!="sddm":
-					info = subprocess.run([ "loginctl", "show-session", session ],stdout=subprocess.PIPE)
-					data={}
-					for infoline in info.stdout.decode().split("\n"):
-						if len(infoline)>0:
-							key, value = re.split( "=", infoline, maxsplit=1 )
-							data[key] = value
-
-							if data.get("Active")=="yes" and (data.get("Type")=="x11" or data.get("Type")=="wayland"):
-								return True
-		return False
-
-	#def _check_open_session
-
 #class ShutdownerManager
