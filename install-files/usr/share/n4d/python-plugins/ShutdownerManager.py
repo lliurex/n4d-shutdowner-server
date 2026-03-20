@@ -6,8 +6,7 @@ import subprocess
 import copy
 import time
 import n4d.server.core as n4dcore
-import n4d.responses
-import xmlrpc.client as n4dclient
+import n4d.client
 import ssl
 import re
 
@@ -400,9 +399,8 @@ class ShutdownerManager:
 	def _check_connection_with_server(self):
 
 		try:
-			context=ssl._create_unverified_context()
-			client=n4dclient.ServerProxy('https://server:9779',context=context,allow_none=True)
-			test=client.is_cron_enabled('','ShutdownerManager')
+			client=n4d.client.Client('https://server:9779',timeout=10)
+			test=client.ShutdownerManager.is_cron_enabled()
 			self.is_clientized_desktop=False
 			return True
 		except Exception as e:
