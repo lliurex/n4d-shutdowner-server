@@ -22,7 +22,6 @@ class ShutdownerManager:
 		self.adi_cron_file="/etc/cron.d/lliurex-shutdowner-adi"
 		self.adi_client="/usr/bin/natfree-tie"
 		self.adi_server="/usr/bin/natfree-adi"
-		self.keep_cron_file=False
 		self.is_adi=False
 		self.is_adi_client=False
 		self.version_reference=["adi","desktop"]
@@ -234,7 +233,6 @@ class ShutdownerManager:
 			variable["server_cron"]["cron_server_content"]=variable["server_cron"]["cron_server_content"].replace("&gt;&gt;",">>")
 			self.internal_variable=copy.deepcopy(variable)
 		
-		self.keep_cron_file=False
 		self.check_server_shutodown()
 		self.core.set_variable("SHUTDOWNER",variable)
 	
@@ -243,99 +241,93 @@ class ShutdownerManager:
 	#def save_variable
 
 	def check_server_shutodown(self):
-			
-		if self.internal_variable["cron_enabled"] and self.internal_variable["cron_values"]["server_shutdown"]:
-			if not self.internal_variable["server_cron"]["custom_shutdown"]:
-				tmp_cron_content=self.internal_variable["cron_content"].replace("&gt;&gt;",">>")
-				f=open(self.cron_file,"w")
-				f.write(tmp_cron_content)
-				f.close()
-				if os.path.exists(self.adi_cron_file):
-					os.remove(self.adi_cron_file)	
+
+		if self.internal_variable["cron_enabled"]:
+			if self.is_adi:
+				if os.path.exists(self.desktop_cron_file):
+					os.remove(self.desktop_cron_file)
+
+				if self.internal_variable["cron_values"]["server_shutdown"]:
+					if not self.internal_variable["server_cron"]["custom_shutdown"]:
+						tmp_cron_content=self.internal_variable["cron_content"].replace("&gt;&gt;",">>")
+						f=open(self.cron_file,"w")
+						f.write(tmp_cron_content)
+						f.close()
+						if os.path.exists(self.adi_cron_file):
+							os.remove(self.adi_cron_file)
+					else:
+						self._create_cron_file()
+						if os.path.exists(self.cron_file):
+							os.remove(self.cron_file)
+				else:
+					self._remove_cron_files()
+
 			else:
-				if self.is_adi:
-					shutdown_cmd="/usr/sbin/shutdown-server-lliurex"
-					cron_content="%s %s * * %s root %s >> /var/log/syslog\n"
-					minute=self.internal_variable["server_cron"]["cron_server_values"]["minute"]
-					hour=self.internal_variable["server_cron"]["cron_server_values"]["hour"]
-					days=""
-					count=1
-
-					for day in self.internal_variable["server_cron"]["cron_server_values"]["weekdays"]:
-						if day:
-							days+="%s,"%count
-						count+=1
-					days=days.rstrip(",")
-
-					server_cron=cron_content%(minute,hour,days,shutdown_cmd)
-					server_cron=server_cron.replace("&gt;&gt;",">>")
-
-					f=open(self.adi_cron_file,"w")
-					f.write(server_cron)
-					f.close()
-					if os.path.exists(self.cron_file):
-						os.remove(self.cron_file)
+				self._create_cron_file()
+				self._remove_cron_files()
 		else:
-			if os.path.exists(self.cron_file):
-				if self.is_adi_client:
-					self.keep_cron_file=True
+			if self.is_adi:
+				self._remove_cron_files(True)
+			else:
+				if os.path.exists(self.cron_file) and self.is_adi_client:
 					os.rename(self.cron_file,self.desktop_cron_file)
 					self._update_internal_variable()
 				else:
-					os.remove(self.cron_file)
-			
-			if os.path.exists(self.adi_cron_file):
-				os.remove(self.adi_cron_file)	
-			
-		if not self.is_adi:
-			self.build_thinclient_cron()
+					self._remove_cron_files(True)
 
 		return True
+
+	def _create_cron_file(self):
+
+		cron_command="%s %s * * %s root %s >> /var/log/syslog\n"
+		days=""
+		count=1
 		
-	#def check_server_shutdown
-	
-	def build_thinclient_cron(self):
-		
-		if self.internal_variable["cron_enabled"] and self.internal_variable["cron_values"]["server_shutdown"]:
-			if not self.internal_variable["server_cron"]["custom_shutdown"]:
-			# server will handle dialog calls its shutdown
-				if self.is_adi:
-					if os.path.exists(self.desktop_cron_file):
-						os.remove(self.desktop_cron_file)
-					return True
-	
-		if self.internal_variable["cron_enabled"]:
-			
-			# server will only handle thin clients dialogs
+		if self.is_adi:
+			shutdown_cmd="/usr/sbin/shutdown-server-lliurex"
+			minute=self.internal_variable["server_cron"]["cron_server_values"]["minute"]
+			hour=self.internal_variable["server_cron"]["cron_server_values"]["hour"]
+			days_list=self.internal_variable["server_cron"]["cron_server_values"]["weekdays"]
+			file_to_write=self.adi_cron_file
+
+		else:
 			shutdown_cmd="/usr/sbin/shutdown-lliurex"
-			cron_content="%s %s * * %s root %s >> /var/log/syslog\n"
 			minute=self.internal_variable["cron_values"]["minute"]
 			hour=self.internal_variable["cron_values"]["hour"]
-			days=""
-			count=1
-			
-			for day in self.internal_variable["cron_values"]["weekdays"]:
-				if day:
-					days+="%s,"%count
-				count+=1
-			days=days.rstrip(",")
-			
-			thinclient_cron=cron_content%(minute,hour,days,shutdown_cmd)
-			thinclient_cron=thinclient_cron.replace("&gt;&gt;",">>")
-			f=open(self.desktop_cron_file,"w")
-			f.write(thinclient_cron)
-			f.close()
-			
-			return True
-			
-		else:
-			# nothing to do
-			if os.path.exists(self.desktop_cron_file):
-				if not self.keep_cron_file:
-					os.remove(self.desktop_cron_file)
-
-			return True
+			days_list=self.internal_variable["cron_values"]["weekdays"]
+			file_to_write=self.desktop_cron_file
 		
+
+		for day in days_list:
+			if day:
+				days+="%s,"%count
+			count+=1
+			
+		days=days.rstrip(",")
+
+		cron_content=cron_command%(minute,hour,days,shutdown_cmd)
+		cron_content=cron_content.replace("&gt;&gt;",">>")
+
+		f=open(file_to_write,"w")
+		f.write(cron_content)
+		f.close()
+	
+	#def _create_cron_file
+
+	def _remove_cron_files(self,all_files=False):
+
+		if all_files:
+			if os.path.exists(self.desktop_cron_file):
+				os.remove(self.desktop_cron_file)
+
+		if os.path.exists(self.adi_cron_file):
+			os.remove(self.adi_cron_file)
+
+		if os.path.exists(self.cron_file):
+			os.remove(self.cron_file)
+
+	#def _remove_cron_files
+
 	def _is_client_mode(self):
 
 		is_client=False
@@ -348,36 +340,7 @@ class ShutdownerManager:
 				self.is_adi_client=True
 
 		return is_client
-		'''
-		flavours=[]
-		try:
-			cmd='lliurex-version -v'
-			p=subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE)
-			result=p.communicate()[0]
-
-			if type(result) is bytes:
-				result=result.decode()
-
-			for x in result.split(","):
-				if x.strip() in self.version_reference:
-					flavours.append(x.strip())
-
-			for item in flavours:
-				if 'adi' in item:
-					self.is_desktop=False
-					self.is_adi=True
-				break
 		
-			if self.is_desktop:
-				if os.path.exists(self.adi_client):
-					is_client=True
-					self.is_adi_client=True
-				
-			return is_client
-			
-		except Exception as e:
-			return False
-		'''
 	#def _is_client_mode
 
 	def _check_connection_with_adi(self):
