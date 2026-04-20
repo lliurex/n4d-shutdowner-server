@@ -1,3 +1,9 @@
+n4d-shutdowner-server (0.24.23) noble; urgency=medium
+
+  * Refactorized to simplify code
+  
+ -- Juan Ramon Pelegrina <juapesai@hotmail.com>  Mon, 20 Apr 2026 11:30:54 +0200
+
 n4d-shutdowner-server (0.24.22) noble; urgency=medium
 
   * Added timeout when check connection with server
